@@ -10,25 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository (+ download lfs dependencies)
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
           lfs: true
+          submodules: recursive
+
     - name: Checkout LFS objects
       run: git lfs checkout
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        node-version: '20'
+        python-version: '3.12'
 
-    - name: Install zip
-      run: sudo apt-get install -y zip
+    - name: Setup and validate
+      run: |
+        make setup
+        make validate
 
     - name: Create zip file
+      run: make asset zip
+
+    - name: Get asset name
+      id: asset_name
       run: |
-        cd asset
-        zip -r ../Testfeld_Niedersachsen_ALKS_xodr_sample.zip ./*
+        echo "zip=$(ls *.zip)" >> $GITHUB_OUTPUT
  
     - name: Create Release
       id: create_release
@@ -47,6 +54,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./Testfeld_Niedersachsen_ALKS_xodr_sample.zip
-        asset_name: Testfeld_Niedersachsen_ALKS_xodr_sample.zip
+        asset_path: ./${{ steps.asset_name.outputs.zip }}
+        asset_name: ${{ steps.asset_name.outputs.zip }}
         asset_content_type: application/zip

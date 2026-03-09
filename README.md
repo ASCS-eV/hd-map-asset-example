@@ -10,16 +10,22 @@ All ENVITED X Dataspace assets are defined according to [EVES-003](https://ascs-
 
 ## Installation
 
-If you want to use the validation scripts from 📁 `ontology-management-base/src` then you need to isntall the following dependencies:
+```bash
+git clone --recurse-submodules <repo-url>
+cd hd-map-asset-example
+make setup
+```
+
+Or if already cloned:
 
 ```bash
-# On Windows use python instead of python3
-sudo apt-get install python3-full
-python3 -m venv .venv/
-source .venv/bin/activate # On Windows use: source .venv/Scripts/activate
-python3 -m pip install -r ontology-management-base/requirements.txt
-# Example check
-python3 ontology-management-base/src/check_jsonld_against_shacl_schema.py asset/manifest_reference.json asset/metadata/hdmap_instance.json
+make setup
+```
+
+## Validation
+
+```bash
+make validate
 ```
 
 ## Repo Structure
@@ -33,10 +39,11 @@ The Repo has the following structure:
 - 📄 *`README.md`* <i style="color:gray;">(defines asset folder structure)</i>
 - 📄 *`..more..`* <i style="color:gray;">(see folder)</i>
 
-📁 `ontology-management-base`
+📁 `submodules/sl-5-8-asset-tools`
 
-- contains all SHACLs and ontologies needed for onboarding and registering datasets, including semantic and syntactic validation of the provided metadata.
-- Versioned git submodule of [ontology-management-base](https://github.com/GAIA-X4PLC-AAD/ontology-management-base).
+- Asset creation and processing pipeline tools.
+- Contains `ontology-management-base` as a nested submodule with all SHACLs and ontologies needed for validation.
+- Versioned git submodule of [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools).
 
 📄 `CONTRIBUTING.md` *-> contributing guidelines*
 
@@ -47,6 +54,17 @@ The Repo has the following structure:
 - 📁 `folder-name`: A folder in the repo.
 - 📄 `assetName`: A file in the repo.
 - <i style="color:gray;">(optional)</i> : This file or folder is optional and can be added or omitted as needed.
+
+## Available Make Targets
+
+```bash
+make help       # Show all available commands
+make setup      # Create venv and install dependencies
+make validate   # Validate asset JSON-LD against SHACL shapes
+make lint       # Lint (validates asset JSON-LD)
+make asset zip  # Create asset zip for release
+make clean      # Remove build artifacts
+```
 
 ## FAQ
 
@@ -64,9 +82,9 @@ The Repo has the following structure:
 
 - **isPublic** *: A public user has only viewing rights to certain files or metadata.*
 
-### Which SCHAL - Files are used to generate the domainMetadata.json ?
+### Which SHACL - Files are used to generate the domainMetadata.json ?
 
--You need to use the following Ontology from [Ontology Management Base Repository](https://github.com/GAIA-X4PLC-AAD/ontology-management-base) - [HdMap_Ontology](https://github.com/GAIA-X4PLC-AAD/ontology-management-base/blob/main/hdmap/hdmap_ontology.ttl).
+-You need to use the following Ontology from [Ontology Management Base Repository](https://github.com/ASCS-eV/ontology-management-base) - [HdMap_Ontology](https://github.com/ASCS-eV/ontology-management-base/blob/main/artifacts/hdmap/hdmap.owl.ttl).
 
 ## Usage
 
