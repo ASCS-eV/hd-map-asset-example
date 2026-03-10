@@ -5,6 +5,3 @@
 [submodule "submodules/EVES"]
 	path = submodules/EVES
 	url = git@github.com:ASCS-eV/EVES.git
-[submodule "submodules/opendriveconverter"]
-	path = submodules/opendriveconverter
-	url = https://github.com/virtualcitySYSTEMS/opendriveconverter.git
