@@ -4,7 +4,7 @@ This repository serves as a reference for onboarding a HD-Map asset into the ENV
 
 A complete **`asset`** in a specific domain includes the data itself and all necessary files for describing, evaluating, and visualizing the dataset.
 
-The repository has the following folder structure and the asset sample can be downloaded as artifact from the latest release (**`asset.zip`**).
+The asset is generated from source files in `generated/input/` using the pipeline, and the release zip can be downloaded as an artifact from the latest release.
 
 All ENVITED-X Dataspace assets are defined according to [EVES-003](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html).
 
@@ -23,9 +23,6 @@ make generate
 
 # 4. Validate the generated asset
 make generate validate
-
-# 5. Package the hand-crafted example asset for release
-make asset zip
 ```
 
 If already cloned without submodules:
@@ -37,11 +34,11 @@ make setup
 
 ## How It Works
 
-The `asset/` folder contains a **hand-crafted reference asset** — a complete, production-ready HD-Map for the ENVITED-X Dataspace. `make generate` uses the [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools) pipeline to auto-generate a fresh asset from the same `.xodr` input into the `generated/` folder.
+The `generated/input/` folder contains the **pipeline inputs** — an OpenDRIVE `.xodr` file plus supplementary material (images, docs, license). `make generate` uses the [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools) pipeline to produce a complete EVES-003 asset in `generated/output/`.
 
-### What Gets Auto-Generated vs. Created Manually
+### What Gets Auto-Generated vs. Provided as Input
 
-Everything begins with **one input file**: an OpenDRIVE (`.xodr`) HD-Map file. The pipeline auto-generates roughly half of the asset — the rest is supplementary material you provide (screenshots, docs, license).
+Everything begins with **one input file**: an OpenDRIVE (`.xodr`) HD-Map file. The pipeline auto-generates most of the asset — the rest is supplementary material you provide (screenshots, docs, license).
 
 | File | Auto-Generated? | How |
 |------|:---:|---|
@@ -51,10 +48,10 @@ Everything begins with **one input file**: an OpenDRIVE (`.xodr`) HD-Map file. T
 | `manifest_reference.json` | ✅ | `structure_creator` → `jsonLD_creator` builds the manifest |
 | `media/roadNetwork.geojson` | ✅ | `xodr_routing_creator` converts road geometry to GeoJSON |
 | `media/bbox.geojson` | ✅ | `xodr_routing_creator` computes the bounding box polygon |
+| `media/3d_preview/*.json` | ✅ | `xodr_to_geojson_caller` converts road/lane/object geometry |
 | `validation-reports/*_asam_*.xqar/.txt` | ✅ | `qualitychecker_caller` runs ASAM OpenDRIVE checks |
 | `validation-reports/*_openmsl_*.xqar/.txt` | ✅ | `qualitychecker_caller` runs OpenMSL checks |
 | `media/*.png` (screenshots) | ❌ | Manually captured in a map viewer |
-| `media/3d_preview/*.json` | ❌ | Manually exported from a 3D visualization tool |
 | `documentation/*.pdf` | ❌ | Manually written documentation |
 | `documentation/*_stats.txt` | ❌ | Manually created statistics |
 
@@ -65,17 +62,20 @@ The asset creation pipeline runs as a sequence of modular steps, each building o
 ```
   Your .xodr file  ──►  meta_data_extractor  ──►  jsonLD_creator (asset)
                          Parse .xodr XML            Build hdmap_instance.json
-                         🌐 geocoding               🌐 fetch ontology
+                         🌐 geocoding
 
          │
          ├──►  shacl_combiner ──► jsonLD_validator
-         │     🌐 download SHACL    Validate metadata
+         │     Combine SHACL shapes    Validate metadata
          │
          ├──►  qualitychecker_caller   (optional: needs make setup qc)
          │     Run ASAM + OpenMSL checks → validation-reports/
          │
          ├──►  xodr_routing_creator
          │     .xodr → roadNetwork.geojson + bbox.geojson
+         │
+         ├──►  xodr_to_geojson_caller
+         │     .xodr → 3d_preview/*.json (road/lane/object geometry)
          │
          ├──►  asset_reducer
          │     .xodr → .bjson (binary search index)
@@ -84,7 +84,7 @@ The asset creation pipeline runs as a sequence of modular steps, each building o
                Organize into EVES-003   Build manifest_reference.json
                folder structure          ──► jsonLD_validator (manifest)
 
-  🌐 = requires internet connection
+  🌐 = requires internet connection (reverse geocoding only)
 ```
 
 ## Generating an Asset (Step by Step)
@@ -112,9 +112,9 @@ make generate
 ```
 
 This single command:
-1. **Stages** the `.xodr` from `asset/simulation-data/`, images from `asset/media/`, docs from `asset/documentation/`, and `LICENSE` into `generated/input/`
-2. **Creates** `uploadedFiles.json` automatically from the staged files
-3. **Runs** the full pipeline (14 steps) → outputs to `generated/output/<AssetName>/`
+1. **Reads** the `input_manifest.json` blueprint from `generated/input/`
+2. **Runs** the full pipeline (14 steps) → outputs to `generated/output/<AssetName>/`
+3. **Creates** a release-ready zip at `generated/output/<AssetName>.zip`
 
 The generated asset contains the complete EVES-003 folder structure:
 
@@ -122,15 +122,14 @@ The generated asset contains the complete EVES-003 folder structure:
 generated/output/<AssetName>/
 ├── simulation-data/    ← .xodr + .bjson search index
 ├── metadata/           ← hdmap_instance.json (JSON-LD)
-├── media/              ← GeoJSON maps + impression PNGs
+├── media/              ← GeoJSON maps + impression PNGs + 3D preview
 ├── documentation/      ← PDF + stats
 ├── validation-reports/ ← ASAM + OpenMSL QC reports
 ├── manifest_reference.json
-├── README.md
-└── asset.zip
+└── README.md
 ```
 
-> 🌐 **Internet required** — the pipeline fetches ontology schemas, SHACL shapes, and geocoding data.
+> 🌐 **Internet required for geocoding only** — reverse geocoding uses the Nominatim API. Ontology schemas and SHACL shapes are bundled via the `ontology-management-base` submodule.
 
 ### Step 4 — Validate the generated asset
 
@@ -146,7 +145,7 @@ Runs the SHACL validation suite against the generated `manifest_reference.json` 
 make generate clean
 ```
 
-Removes the entire `generated/` directory. The `generated/` folder is in `.gitignore` and is never committed.
+Removes the `generated/output/` directory. Re-run `make generate` to regenerate.
 
 ## Creating Your Own Asset
 
@@ -154,11 +153,12 @@ To create a new HD-Map asset from **your own** `.xodr` file, you have two option
 
 ### Option A — Use `make generate` (recommended)
 
-1. Replace the `.xodr` in `asset/simulation-data/` with your own
-2. Replace images in `asset/media/` and docs in `asset/documentation/` with yours
-3. Run `make generate`
+1. Replace the `.xodr` in `generated/input/` with your own
+2. Replace images and docs in `generated/input/` with yours
+3. Update `generated/input/input_manifest.json` to list your files
+4. Run `make generate clean && make generate`
 
-The pipeline will auto-discover your input files, run all steps, and produce a fresh asset in `generated/output/`.
+The pipeline will run all steps and produce a fresh asset in `generated/output/`.
 
 ### Option B — Run the pipeline manually
 
@@ -240,16 +240,16 @@ Supported file types and categories:
 
 📁 `.github` → GitHub Actions release workflow
 
-📁 `asset` → The complete hand-crafted example asset ([details](asset/README.md))
+📁 `generated/input` → Pipeline input files (`.xodr`, images, docs, license, `input_manifest.json`)
 
-- 📁 `simulation-data` → OpenDRIVE map file (`.xodr`) + search index (`.bjson`)
-- 📁 `metadata` → `hdmap_instance.json` (domain-specific JSON-LD metadata)
-- 📁 `media` → Screenshots, GeoJSON maps, 3D preview data
-- 📁 `documentation` → PDF documentation and statistics
-- 📁 `validation-reports` → ASAM and OpenMSL quality check results
-- 📄 `manifest_reference.json` → Content registry linking all files with access roles
+📁 `generated/output` → Pipeline output (auto-generated, not committed)
 
-📁 `generated` → Pipeline output (auto-generated, git-ignored)
+- 📁 `<AssetName>/simulation-data` → OpenDRIVE map file (`.xodr`) + search index (`.bjson`)
+- 📁 `<AssetName>/metadata` → `hdmap_instance.json` (domain-specific JSON-LD metadata)
+- 📁 `<AssetName>/media` → Screenshots, GeoJSON maps, 3D preview data
+- 📁 `<AssetName>/documentation` → PDF documentation and statistics
+- 📁 `<AssetName>/validation-reports` → ASAM and OpenMSL quality check results
+- 📄 `<AssetName>/manifest_reference.json` → Content registry linking all files with access roles
 
 📁 `submodules/sl-5-8-asset-tools`
 
@@ -270,14 +270,13 @@ make setup              # Create venv and install all dependencies
 make setup qc           # Also install quality checker tools (optional, slow)
 make install            # Install packages
 
-make generate           # Run full pipeline: .xodr → generated/ asset
+make generate           # Run full pipeline: .xodr → generated/ asset + zip
 make generate validate  # Validate the generated asset
-make generate clean     # Remove generated/ directory
+make generate clean     # Remove generated/output/ directory
 
-make validate           # Validate the hand-crafted asset/ against SHACL
-make lint               # Lint (validates asset JSON-LD)
+make validate           # Validate the generated asset against SHACL
+make lint               # Lint (same as validate)
 
-make asset zip          # Create asset zip for release
 make clean              # Remove all build artifacts, caches, and generated/
 ```
 
@@ -285,7 +284,7 @@ make clean              # Remove all build artifacts, caches, and generated/
 
 ### How can I easily create a Simulation Asset?
 
-- **One command:** Run `make generate` — it stages files from `asset/`, runs the full pipeline, and outputs a complete EVES-003 asset to `generated/`.
+- **One command:** Run `make generate` — it reads the input blueprint from `generated/input/`, runs the full pipeline, and outputs a complete EVES-003 asset to `generated/output/`.
 
 - **Preparation:** Ensure you understood this repository and the necessary data to create a SimulationAsset for the ENVITED-X Data Space and familiarize yourself with the concept of an asset ([EVES-003](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html)).
 
@@ -307,7 +306,7 @@ You need to use the following ontology from [Ontology Management Base Repository
 
 - **Python 3.12+** and `make`
 - The `sl-5-8-asset-tools` submodule (initialized via `git submodule update --init --recursive`)
-- **Internet connection** — required for geocoding (Nominatim API), fetching ontology schemas (w3id.org), and downloading SHACL shapes
+- **Internet connection** — required only for reverse geocoding (Nominatim API); ontology schemas and SHACL shapes are provided locally by the `ontology-management-base` submodule
 - For quality checking (optional): run `make setup qc` to install the ASAM and OpenMSL checker tools from GitHub
 
 ### What is the `uploadedFiles.json`?
@@ -324,5 +323,4 @@ When using `make generate`, this file is created automatically.
 
 - **Geocoding timeouts** — The `meta_data_extractor` uses the Nominatim API for reverse geocoding. If the API is slow or rate-limited, the pipeline may fail. Simply retry.
 - **Quality checkers require extra install** — The `[qc]` optional dependencies install from Git branches and may take a while. Without them, quality checking is skipped (no validation reports generated).
-- **Ontology versions** — The pipeline generates metadata using the **latest** ontology versions (currently v6 for HD-Map). The existing hand-crafted example in `asset/` uses v4. Both are valid but produce different JSON-LD structures.
-- **GeoJSON converter disabled** — The `xodr_to_geojson_caller` step requires a Java runtime and the VCS converter JAR, which is not bundled. It is disabled by default in `configs/process.json`.
+- **Ontology versions** — The pipeline generates metadata using the **latest** ontology versions. Both current and older versions are valid but produce different JSON-LD structures.

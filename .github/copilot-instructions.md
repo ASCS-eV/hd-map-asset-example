@@ -48,7 +48,7 @@ make setup
 
 ### Commits
 
-This project uses [DCO sign-off](CONTRIBUTING.md). All commits require `Signed-off-by` — use `git commit -s`.
+This project uses [DCO sign-off](CONTRIBUTING.md). All commits require `Signed-off-by` — use `git commit -s`. Do **not** add `Co-authored-by: Copilot` trailers.
 
 ## Release Workflow
 
