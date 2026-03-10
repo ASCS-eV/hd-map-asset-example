@@ -1,5 +1,5 @@
 /.venv/
 output.log
 *.zip
-/generated/*
-!/generated/.gitkeep
+/generated/output/
+!/generated/input/

@@ -117,9 +117,9 @@ endif
 
 generate:
 ifeq ($(SUBCMD),clean)
-	@echo "[INFO] Removing generated/ directory..."
-	@"$(PYTHON)" -c "import shutil; shutil.rmtree('$(GENERATED_DIR)', ignore_errors=True)"
-	@echo "[OK] Generated directory removed"
+	@echo "[INFO] Removing generated/output/ directory..."
+	@"$(PYTHON)" -c "import shutil; shutil.rmtree('$(GEN_OUTPUT)', ignore_errors=True)"
+	@echo "[OK] Generated output removed (input/ blueprint preserved)"
 else ifeq ($(SUBCMD),validate)
 	$(call check_dev_setup)
 	@"$(PYTHON)" -c "\
@@ -138,12 +138,19 @@ sys.exit(rc); \
 	@echo "[OK] Generated asset validation complete"
 else
 	$(call check_dev_setup)
-	@echo "[INFO] Staging input files..."
 	@"$(PYTHON)" -c "\
+import pathlib; \
+inp = pathlib.Path('$(GEN_INPUT)'); \
+im = inp / 'input_manifest.json'; \
+exit(0) if im.exists() else exit(1); \
+" 2>/dev/null && { \
+		echo "[INFO] Using existing blueprint in $(GEN_INPUT)/"; \
+	} || { \
+		echo "[INFO] Staging input files from $(ASSET_DIR)/..."; \
+		"$(PYTHON)" -c "\
 import json, pathlib, shutil; \
 inp = pathlib.Path('$(GEN_INPUT)'); \
 inp.mkdir(parents=True, exist_ok=True); \
-pathlib.Path('$(GEN_OUTPUT)').mkdir(parents=True, exist_ok=True); \
 sd = pathlib.Path('$(ASSET_DIR)/simulation-data'); \
 xodrs = list(sd.glob('*.xodr')); \
 assert xodrs, 'No .xodr file found in $(ASSET_DIR)/simulation-data/'; \
@@ -164,7 +171,9 @@ manifest = {'@context': ['https://w3id.org/ascs-ev/envited-x/manifest/v5/', {'en
 manifest['hasLicense'] = license_link if license_link else {'@type': 'Link', 'hasCategory': {'@id': 'envited-x:isLicense'}, 'hasAccessRole': {'@id': 'envited-x:isPublic'}, 'hasFileMetadata': {'@type': 'FileMetadata', 'filePath': 'https://www.mozilla.org/en-US/MPL/2.0/', 'mimeType': 'text/html'}}; \
 (inp / 'input_manifest.json').write_text(json.dumps(manifest, indent=2)); \
 print('[OK] Staged ' + str(len(artifacts) + 1) + ' files in $(GEN_INPUT)/'); \
-"
+"; \
+	}
+	@mkdir -p "$(GEN_OUTPUT)" 2>/dev/null || "$(PYTHON)" -c "import pathlib; pathlib.Path('$(GEN_OUTPUT)').mkdir(parents=True, exist_ok=True)"
 	@echo "[INFO] Running asset creation pipeline..."
 	@cd "$(GEN_INPUT)" && "$(CURDIR)/$(PYTHON)" -m asset_extraction.main \
 		input_manifest.json \
