@@ -1,3 +1,5 @@
 /.venv/
 output.log
 *.zip
+/generated/*
+!/generated/.gitkeep

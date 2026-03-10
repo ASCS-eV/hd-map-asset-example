@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'  # Triggers the workflow on version tags
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -32,28 +35,8 @@ jobs:
     - name: Create zip file
       run: make asset zip
 
-    - name: Get asset name
-      id: asset_name
-      run: |
-        echo "zip=$(ls *.zip)" >> $GITHUB_OUTPUT
- 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release and Upload Asset
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ steps.asset_name.outputs.zip }}
-        asset_name: ${{ steps.asset_name.outputs.zip }}
-        asset_content_type: application/zip
+        files: "*.zip"
+        generate_release_notes: true

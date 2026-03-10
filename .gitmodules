@@ -2,3 +2,6 @@
 	path = submodules/sl-5-8-asset-tools
 	url = https://github.com/openMSL/sl-5-8-asset-tools.git
 	branch = main
+[submodule "submodules/EVES"]
+	path = submodules/EVES
+	url = git@github.com:ASCS-eV/EVES.git
