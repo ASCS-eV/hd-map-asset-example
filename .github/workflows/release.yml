@@ -27,16 +27,14 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Setup and validate
+    - name: Setup, generate, and validate
       run: |
         make setup
+        make generate
         make validate
-
-    - name: Create zip file
-      run: make asset zip
 
     - name: Create Release and Upload Asset
       uses: softprops/action-gh-release@v2
       with:
-        files: "*.zip"
+        files: "generated/output/**/*.zip"
         generate_release_notes: true

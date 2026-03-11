@@ -53,4 +53,4 @@ This project uses [DCO sign-off](CONTRIBUTING.md). All commits require `Signed-o
 
 ## Release Workflow
 
-The GitHub Actions workflow (`.github/workflows/release.yml`) triggers on version tags (`v*.*.*`), runs `make setup && make validate`, zips the generated asset via `make asset zip`, and uploads it as a GitHub release artifact.
+The GitHub Actions workflow (`.github/workflows/release.yml`) triggers on version tags (`v*.*.*`), runs `make setup && make generate && make validate`, and uploads the pipeline-generated `asset.zip` as a GitHub release artifact.
