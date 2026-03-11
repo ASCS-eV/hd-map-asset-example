@@ -30,12 +30,12 @@ Configured in `.pre-commit-config.yaml` — all hooks delegate to `make` targets
 
 ### Asset Structure (EVES-003)
 
-Every asset must contain: `simulation-data/`, `metadata/`, `media/`, `documentation/`, and a `manifest_reference.json` at the root. Optional: `validation-reports/`.
+Every asset must contain: `simulation-data/`, `metadata/`, `media/`, `documentation/`, and a `manifest.json` at the root. Optional: `validation-reports/`.
 
 ### JSON-LD Metadata
 
-- `manifest_reference.json` — Content registry linking all asset files with access roles (`isOwner`, `isRegistered`, `isPublic`) and categories (`isSimulationData`, `isMetadata`, `isMedia`, etc.)
-- `metadata/hdmap_instance.json` — Domain-specific metadata (format, content, quantity, quality, data source, georeference) conforming to the HD-Map SHACL shapes from ontology-management-base
+- `manifest.json` — Content registry linking all asset files with access roles (`isOwner`, `isRegistered`, `isPublic`) and categories (`isSimulationData`, `isMetadata`, `isMedia`, etc.)
+- `metadata/hdmap.json` — Domain-specific metadata (format, content, quantity, quality, data source, georeference) conforming to the HD-Map SHACL shapes from ontology-management-base
 
 Both files use typed `@value`/`@type` pairs for literals and reference ontologies via `@context` prefixes like `hdmap:`, `manifest:`, `envited-x:`, `georeference:`, `gx:`.
 

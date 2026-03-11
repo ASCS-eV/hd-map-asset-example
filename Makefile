@@ -111,8 +111,8 @@ out = pathlib.Path('$(GEN_OUTPUT)'); \
 dirs = [d for d in out.iterdir() if d.is_dir()] if out.exists() else []; \
 sys.exit('[SKIP] No generated asset found (run: make generate)') if not dirs else None; \
 asset = dirs[0]; \
-manifest = asset / 'manifest_reference.json'; \
-metadata = asset / 'metadata' / 'hdmap_instance.json'; \
+manifest = asset / 'manifest.json'; \
+metadata = asset / 'metadata' / 'hdmap.json'; \
 paths = [str(p) for p in [manifest, metadata] if p.exists()]; \
 sys.exit('[ERR] No manifest or metadata found in ' + str(asset)) if not paths else None; \
 print('[INFO] Validating ' + str(asset.name) + ' against SHACL shapes...'); \
@@ -139,8 +139,8 @@ out = pathlib.Path('$(GEN_OUTPUT)'); \
 dirs = [d for d in out.iterdir() if d.is_dir()] if out.exists() else []; \
 sys.exit('[ERR] No generated asset found. Run: make generate') if not dirs else None; \
 asset = dirs[0]; \
-mf = asset / 'manifest_reference.json'; \
-md = asset / 'metadata' / 'hdmap_instance.json'; \
+mf = asset / 'manifest.json'; \
+md = asset / 'metadata' / 'hdmap.json'; \
 missing = [f for f in [mf, md] if not f.exists()]; \
 sys.exit('[ERR] Missing: ' + ', '.join(str(f) for f in missing)) if missing else print('[INFO] Validating ' + asset.name + '...'); \
 rc = subprocess.call([sys.executable, '-m', 'src.tools.validators.validation_suite', '--run', 'check-data-conformance', '--data-paths', str(mf), str(md), '--artifacts', '$(OMB)/artifacts']); \
@@ -221,7 +221,7 @@ out = pathlib.Path('$(GEN_OUTPUT)'); \
 dirs = [d for d in out.iterdir() if d.is_dir()] if out.exists() else []; \
 assert dirs, '[ERR] No generated asset found. Run: make generate'; \
 ad = dirs[0]; \
-meta_path = ad / 'metadata' / 'hdmap_instance.json'; \
+meta_path = ad / 'metadata' / 'hdmap.json'; \
 meta = json.loads(meta_path.read_text(encoding='utf-8')); \
 name = meta['hdmap:hasDataResource']['gx:name']['@value'].replace(' ', '_'); \
 zf = zipfile.ZipFile(name + '.zip', 'w', zipfile.ZIP_DEFLATED); \
