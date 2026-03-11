@@ -2,13 +2,14 @@
 
 ## Project Overview
 
-This is a **reference asset repository** for onboarding HD-Map simulation data into the ENVITED-X Dataspace. It serves as a template — the `asset/` folder contains a complete, conformant example of a digital asset (OpenDRIVE HD map) with metadata, media, documentation, and validation reports, all tied together by a `manifest_reference.json`.
+This is a **reference asset repository** for onboarding HD-Map simulation data into the ENVITED-X Dataspace. Users stage input files in `generated/input/`, then `make generate` runs the sl-5-8 pipeline to produce a complete, EVES-003-conformant asset in `generated/output/`.
 
 Assets follow the [EVES-003](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html) specification.
 
 ## Repository Structure
 
-- `asset/` — The example digital asset (simulation data, metadata, media, docs, validation reports, manifest)
+- `generated/input/` — Staged pipeline inputs (manifest, `.xodr` files, media, docs)
+- `generated/output/` — Pipeline output: complete EVES-003 asset ready for validation and release
 - `submodules/sl-5-8-asset-tools/` — Asset creation and processing tools (git submodule from [openMSL/sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools))
   - `submodules/ontology-management-base/` — Nested submodule: SHACL shapes, OWL ontologies, JSON-LD contexts, and Python validation tools (from [ASCS-eV/ontology-management-base](https://github.com/ASCS-eV/ontology-management-base))
 
@@ -29,7 +30,7 @@ Configured in `.pre-commit-config.yaml` — all hooks delegate to `make` targets
 
 ### Asset Structure (EVES-003)
 
-Every asset must contain: `simulation-data/`, `metadata/`, `media/`, `documentation/`, and a `manifest_reference.json` at the root. Optional: `validation-reports/`. See `asset/README.md` for the full structure and required files per folder.
+Every asset must contain: `simulation-data/`, `metadata/`, `media/`, `documentation/`, and a `manifest_reference.json` at the root. Optional: `validation-reports/`.
 
 ### JSON-LD Metadata
 
@@ -52,4 +53,4 @@ This project uses [DCO sign-off](CONTRIBUTING.md). All commits require `Signed-o
 
 ## Release Workflow
 
-The GitHub Actions workflow (`.github/workflows/release.yml`) triggers on version tags (`v*.*.*`), runs `make setup && make validate`, zips the `asset/` folder via `make asset zip`, and uploads it as a GitHub release artifact.
+The GitHub Actions workflow (`.github/workflows/release.yml`) triggers on version tags (`v*.*.*`), runs `make setup && make validate`, zips the generated asset via `make asset zip`, and uploads it as a GitHub release artifact.
