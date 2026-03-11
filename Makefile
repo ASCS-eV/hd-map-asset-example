@@ -62,11 +62,7 @@ ifeq ($(SUBCMD),qc)
 		"openmsl-qc-opendrive@git+https://github.com/openMSL/sl-5-9-openmsl-qc-opendrive@main"
 	@echo "[OK] Quality checkers installed"
 else
-	@if ! "$(PYTHON)" -c "import rdflib, pyshacl" >/dev/null 2>&1; then \
-		echo "[INFO] Dependencies missing — reinstalling..."; \
-		"$(PYTHON)" -m pip install -e "$(ASSET_TOOLS)[dev]"; \
-		"$(PYTHON)" -m pip install -e "$(OMB)"; \
-	fi
+	@$(MAKE) -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
 	@"$(PYTHON)" -m pre_commit install --allow-missing-config >/dev/null 2>&1 || true
 	@echo "[OK] Setup complete.  Activate with:  source $(ACTIVATE_SCRIPT)"
 endif
@@ -77,15 +73,12 @@ $(PYTHON):
 	@"$(PYTHON)" -m pip install --upgrade pip
 
 $(ACTIVATE_SCRIPT): $(PYTHON)
-	@echo "[INFO] Installing dependencies..."
-	@"$(PYTHON)" -m pip install -e "$(ASSET_TOOLS)[dev]"
-	@"$(PYTHON)" -m pip install -e "$(OMB)"
+	@$(MAKE) -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
 	@touch "$(ACTIVATE_SCRIPT)"
 
 install:
 	$(call check_dev_setup)
-	@"$(PYTHON)" -m pip install -e "$(ASSET_TOOLS)"
-	@"$(PYTHON)" -m pip install -e "$(OMB)"
+	@$(MAKE) -C "$(ASSET_TOOLS)" install VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
 	@echo "[OK] Install complete"
 
 # ── Lint & Format ────────────────────────────────────────────────────
