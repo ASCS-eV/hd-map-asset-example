@@ -20,9 +20,8 @@ else
 endif
 ACTIVATE_SCRIPT := $(VENV_BIN)/activate
 
-# Asset metadata
-ASSET_DIR := asset
-METADATA  := $(ASSET_DIR)/metadata/hdmap_instance.json
+# Asset validation looks in generated/output/<asset_name>/
+ASSET_DIR := generated/output
 
 # Generated asset directory
 GENERATED_DIR := generated
@@ -71,6 +70,7 @@ else
 		"$(PYTHON)" -m pip install -e "$(ASSET_TOOLS)[dev]"; \
 		"$(PYTHON)" -m pip install -e "$(OMB)"; \
 	fi
+	@"$(PYTHON)" -m pre_commit install --allow-missing-config >/dev/null 2>&1 || true
 	@echo "[OK] Setup complete.  Activate with:  source $(ACTIVATE_SCRIPT)"
 endif
 
@@ -105,11 +105,22 @@ format:
 validate:
 ifneq ($(firstword $(MAKECMDGOALS)),generate)
 	$(call check_dev_setup)
-	@echo "[INFO] Validating asset JSON-LD against SHACL shapes..."
-	@"$(PYTHON)" -m src.tools.validators.validation_suite \
-		--run check-data-conformance \
-		--data-paths $(ASSET_DIR)/manifest_reference.json $(METADATA) \
-		--artifacts "$(OMB)/artifacts"
+	@"$(PYTHON)" -c "\
+import pathlib, subprocess, sys; \
+out = pathlib.Path('$(GEN_OUTPUT)'); \
+dirs = [d for d in out.iterdir() if d.is_dir()] if out.exists() else []; \
+sys.exit('[SKIP] No generated asset found (run: make generate)') if not dirs else None; \
+asset = dirs[0]; \
+manifest = asset / 'manifest_reference.json'; \
+metadata = asset / 'metadata' / 'hdmap_instance.json'; \
+paths = [str(p) for p in [manifest, metadata] if p.exists()]; \
+sys.exit('[ERR] No manifest or metadata found in ' + str(asset)) if not paths else None; \
+print('[INFO] Validating ' + str(asset.name) + ' against SHACL shapes...'); \
+subprocess.check_call([ \
+    '$(PYTHON)', '-m', 'src.tools.validators.validation_suite', \
+    '--run', 'check-data-conformance', \
+    '--data-paths'] + paths + [ \
+    '--artifacts', '$(OMB)/artifacts'])"
 	@echo "[OK] Validation complete"
 endif
 
@@ -206,9 +217,13 @@ ifeq ($(SUBCMD),zip)
 	@echo "[INFO] Creating asset zip..."
 	@"$(PYTHON)" -c "\
 import json, pathlib, zipfile; \
-meta = json.loads(pathlib.Path('$(METADATA)').read_text(encoding='utf-8')); \
+out = pathlib.Path('$(GEN_OUTPUT)'); \
+dirs = [d for d in out.iterdir() if d.is_dir()] if out.exists() else []; \
+assert dirs, '[ERR] No generated asset found. Run: make generate'; \
+ad = dirs[0]; \
+meta_path = ad / 'metadata' / 'hdmap_instance.json'; \
+meta = json.loads(meta_path.read_text(encoding='utf-8')); \
 name = meta['hdmap:hasDataResource']['gx:name']['@value'].replace(' ', '_'); \
-ad = pathlib.Path('$(ASSET_DIR)'); \
 zf = zipfile.ZipFile(name + '.zip', 'w', zipfile.ZIP_DEFLATED); \
 [zf.write(f, f.relative_to(ad)) for f in sorted(ad.rglob('*')) if f.is_file()]; \
 zf.close(); \
@@ -249,7 +264,7 @@ help:
 	@echo "  make generate clean     Remove generated/ directory"
 	@echo ""
 	@echo "  make lint               Lint (validates asset JSON-LD)"
-	@echo "  make validate           Validate the hand-crafted asset/ against SHACL"
+	@echo "  make validate           Validate generated/output/ asset against SHACL"
 	@echo ""
 	@echo "  make asset zip          Create asset zip for release"
 	@echo ""
