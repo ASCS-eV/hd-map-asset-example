@@ -1,6 +1,6 @@
 # HD-Map Asset Example
 
-This repository serves as a reference for onboarding a HD-Map asset into the ENVITED-X Dataspace and can be used as a template for other dataspaces as well. It contains the full description as **`manifest_reference.json`** in addition to a consistent example of an HD-Map asset data.
+This repository serves as a reference for onboarding a HD-Map asset into the ENVITED-X Dataspace and can be used as a template for other dataspaces as well. It contains the full description as **`manifest.json`** in addition to a consistent example of an HD-Map asset data.
 
 A complete **`asset`** in a specific domain includes the data itself and all necessary files for describing, evaluating, and visualizing the dataset.
 
@@ -44,8 +44,8 @@ Everything begins with **one input file**: an OpenDRIVE (`.xodr`) HD-Map file. T
 |------|:---:|---|
 | `simulation-data/*.xodr` | — | **Your input file** (the map itself) |
 | `simulation-data/*.bjson` | ✅ | `asset_reducer` extracts a search-optimized binary JSON |
-| `metadata/hdmap_instance.json` | ✅ | `meta_data_extractor` → `jsonLD_creator` builds the JSON-LD |
-| `manifest_reference.json` | ✅ | `structure_creator` → `jsonLD_creator` builds the manifest |
+| `metadata/hdmap.json` | ✅ | `meta_data_extractor` → `jsonLD_creator` builds the JSON-LD |
+| `manifest.json` | ✅ | `structure_creator` → `jsonLD_creator` builds the manifest |
 | `media/roadNetwork.geojson` | ✅ | `xodr_routing_creator` converts road geometry to GeoJSON |
 | `media/bbox.geojson` | ✅ | `xodr_routing_creator` computes the bounding box polygon |
 | `media/3d_preview/*.json` | ✅ | `xodr_to_geojson_caller` converts road/lane/object geometry |
@@ -61,7 +61,7 @@ The asset creation pipeline runs as a sequence of modular steps, each building o
 
 ```
   Your .xodr file  ──►  meta_data_extractor  ──►  jsonLD_creator (asset)
-                         Parse .xodr XML            Build hdmap_instance.json
+                         Parse .xodr XML            Build hdmap.json
                          🌐 geocoding
 
          │
@@ -81,7 +81,7 @@ The asset creation pipeline runs as a sequence of modular steps, each building o
          │     .xodr → .bjson (binary search index)
          │
          └──►  structure_creator ──► jsonLD_creator (manifest)
-               Organize into EVES-003   Build manifest_reference.json
+               Organize into EVES-003   Build manifest.json
                folder structure          ──► jsonLD_validator (manifest)
 
   🌐 = requires internet connection (reverse geocoding only)
@@ -121,11 +121,11 @@ The generated asset contains the complete EVES-003 folder structure:
 ```
 generated/output/<AssetName>/
 ├── simulation-data/    ← .xodr + .bjson search index
-├── metadata/           ← hdmap_instance.json (JSON-LD)
+├── metadata/           ← hdmap.json (JSON-LD)
 ├── media/              ← GeoJSON maps + impression PNGs + 3D preview
 ├── documentation/      ← PDF + stats
 ├── validation-reports/ ← ASAM + OpenMSL QC reports
-├── manifest_reference.json
+├── manifest.json
 └── README.md
 ```
 
@@ -137,7 +137,7 @@ generated/output/<AssetName>/
 make generate validate
 ```
 
-Runs the SHACL validation suite against the generated `manifest_reference.json` and `hdmap_instance.json`.
+Runs the SHACL validation suite against the generated `manifest.json` and `hdmap.json`.
 
 ### Step 5 — Clean up
 
@@ -245,11 +245,11 @@ Supported file types and categories:
 📁 `generated/output` → Pipeline output (auto-generated, not committed)
 
 - 📁 `<AssetName>/simulation-data` → OpenDRIVE map file (`.xodr`) + search index (`.bjson`)
-- 📁 `<AssetName>/metadata` → `hdmap_instance.json` (domain-specific JSON-LD metadata)
+- 📁 `<AssetName>/metadata` → `hdmap.json` (domain-specific JSON-LD metadata)
 - 📁 `<AssetName>/media` → Screenshots, GeoJSON maps, 3D preview data
 - 📁 `<AssetName>/documentation` → PDF documentation and statistics
 - 📁 `<AssetName>/validation-reports` → ASAM and OpenMSL quality check results
-- 📄 `<AssetName>/manifest_reference.json` → Content registry linking all files with access roles
+- 📄 `<AssetName>/manifest.json` → Content registry linking all files with access roles
 
 📁 `submodules/sl-5-8-asset-tools`
 
