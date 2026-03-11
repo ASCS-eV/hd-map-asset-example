@@ -91,7 +91,7 @@ format:
 	@echo "[INFO] Nothing to format (no Python files in root repo)"
 
 # ── Validate ─────────────────────────────────────────────────────────
-# Finds the first generated asset and validates its JSON-LD files.
+# Validates JSON-LD files for every generated asset in the output directory.
 
 validate:
 ifneq ($(firstword $(MAKECMDGOALS)),generate)
@@ -99,12 +99,12 @@ ifneq ($(firstword $(MAKECMDGOALS)),generate)
 	@"$(PYTHON)" -c "\
 import pathlib, sys; \
 out = pathlib.Path('$(GEN_OUTPUT)'); \
-dirs = [d for d in out.iterdir() if d.is_dir()] if out.exists() else []; \
+dirs = sorted(d for d in out.iterdir() if d.is_dir()) if out.exists() else []; \
 sys.exit('[SKIP] No generated asset found (run: make generate)') if not dirs else None; \
-asset = dirs[0]; \
-paths = [str(p) for p in [asset / 'manifest.json', asset / 'metadata' / 'hdmap.json'] if p.exists()]; \
-sys.exit('[ERR] No manifest or metadata found in ' + str(asset)) if not paths else None; \
-print(' '.join(paths)); \
+bad = [str(d) for d in dirs if not [p for p in [d / 'manifest.json', d / 'metadata' / 'hdmap.json'] if p.exists()]]; \
+sys.exit('[ERR] No manifest or metadata found in: ' + ', '.join(bad)) if bad else None; \
+all_paths = [str(p) for d in dirs for p in [d / 'manifest.json', d / 'metadata' / 'hdmap.json'] if p.exists()]; \
+print(' '.join(all_paths)); \
 " > .validate_paths 2>&1 && \
 	"$(PYTHON)" -m src.tools.validators.validation_suite \
 		--run check-data-conformance \
