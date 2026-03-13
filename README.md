@@ -113,8 +113,8 @@ make generate
 
 This single command:
 1. **Reads** the `input_manifest.json` blueprint from `generated/input/`
-2. **Runs** the full pipeline (14 steps) → outputs to `generated/output/<AssetName>/`
-3. **Creates** a release-ready zip at `generated/output/<AssetName>.zip`
+2. **Runs** the full pipeline → outputs to `generated/output/<AssetName>/`
+3. **Creates** a release-ready zip at `generated/output/<CID>.zip`
 
 The generated asset contains the complete EVES-003 folder structure:
 

@@ -13,12 +13,15 @@ ifeq ($(OS),Windows_NT)
     VENV_BIN         := $(VENV)/Scripts
     PYTHON           ?= $(VENV_BIN)/python.exe
     BOOTSTRAP_PYTHON ?= python
+    ACTIVATE_SCRIPT  := $(VENV_BIN)/activate
+    ACTIVATE_HINT    := use the activation script under $(VENV_BIN) for your shell
 else
     VENV_BIN         := $(VENV)/bin
     PYTHON           ?= $(VENV_BIN)/python3
     BOOTSTRAP_PYTHON ?= python3
+    ACTIVATE_SCRIPT  := $(VENV_BIN)/activate
+    ACTIVATE_HINT    := source $(ACTIVATE_SCRIPT)
 endif
-ACTIVATE_SCRIPT := $(VENV_BIN)/activate
 
 # Generated asset directory
 GENERATED_DIR := generated
@@ -57,14 +60,16 @@ ifeq ($(SUBCMD),qc)
 	@"$(PYTHON)" -m pip install poetry-core --quiet 2>/dev/null || true
 	@"$(PYTHON)" -m pip install --no-deps \
 		"asam-qc-baselib@git+https://github.com/asam-ev/qc-baselib-py@main" \
-		"asam-qc-opendrive@git+https://github.com/asam-ev/qc-opendrive@main" \
+		"asam-qc-opendrive@git+https://github.com/jdsika/qc-opendrive@fix-contact-point-missing-road-link" \
 		"asam-qc-openscenarioxml@git+https://github.com/asam-ev/qc-openscenarioxml@main" \
 		"openmsl-qc-opendrive@git+https://github.com/openMSL/sl-5-9-openmsl-qc-opendrive@main"
+# NOTE: qc-opendrive is pinned to a fork pending upstream PR asam-ev/qc-opendrive#139.
+# Switch back to @main once the PR is merged.
 	@echo "[OK] Quality checkers installed"
 else
-	@$(MAKE) -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
 	@"$(PYTHON)" -m pre_commit install --allow-missing-config >/dev/null 2>&1 || true
-	@echo "[OK] Setup complete.  Activate with:  source $(ACTIVATE_SCRIPT)"
+	@echo "[OK] Setup complete. Activate with: $(ACTIVATE_HINT)"
 endif
 
 $(PYTHON):
@@ -73,12 +78,12 @@ $(PYTHON):
 	@"$(PYTHON)" -m pip install --upgrade pip
 
 $(ACTIVATE_SCRIPT): $(PYTHON)
-	@$(MAKE) -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
 	@touch "$(ACTIVATE_SCRIPT)"
 
 install:
 	$(call check_dev_setup)
-	@$(MAKE) -C "$(ASSET_TOOLS)" install VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" install VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
 	@echo "[OK] Install complete"
 
 # ── Lint & Format ────────────────────────────────────────────────────
@@ -123,7 +128,7 @@ ifeq ($(SUBCMD),clean)
 	@"$(PYTHON)" -c "import shutil; shutil.rmtree('$(GEN_OUTPUT)', ignore_errors=True)"
 	@echo "[OK] Generated output removed (input/ blueprint preserved)"
 else ifeq ($(SUBCMD),validate)
-	@$(MAKE) validate
+	@"$(MAKE)" validate
 else
 	$(call check_dev_setup)
 	@"$(PYTHON)" -c "\
@@ -158,18 +163,26 @@ endif
 help:
 	@echo "hd-map-asset-example -- Available Commands"
 	@echo ""
-	@echo "  make setup              Create venv and install all dependencies"
-	@echo "  make setup qc           Also install quality checker tools (optional, slow)"
-	@echo "  make install            Install packages"
+	@echo "  make setup                   Create venv and install all dependencies"
+	@echo "  make setup qc                Also install quality checker tools (optional, slow)"
+	@echo "  make install                 Install packages"
 	@echo ""
-	@echo "  make generate           Run full pipeline: .xodr -> generated/ asset + zip"
-	@echo "  make generate validate  Validate the generated asset"
-	@echo "  make generate clean     Remove generated/output/ directory"
+	@echo "  make generate                Run full pipeline: .xodr -> generated/ asset + zip"
+	@echo "  make generate validate       Validate the generated asset"
+	@echo "  make generate clean          Remove generated/output/ directory"
 	@echo ""
-	@echo "  make lint               Lint (validates asset JSON-LD)"
-	@echo "  make validate           Validate generated/output/ asset against SHACL"
+	@echo "  make lint                    Lint (validates asset JSON-LD)"
+	@echo "  make validate                Validate generated/output/ asset against SHACL"
 	@echo ""
-	@echo "  make clean              Remove all build artifacts, caches, and generated/"
+	@echo "  make clean                   Remove all build artifacts, caches, and generated/"
+	@echo ""
+	@echo "Debug logging:"
+	@echo "  SL58_LOG_MODE=debug make generate"
+	@echo "  Shows full subprocess command lines, stdout/stderr, and tracebacks."
+	@echo ""
+	@echo "Deterministic mode (reproducible output):"
+	@echo "  SL58_DETERMINISTIC=1 make generate"
+	@echo "  Same input files produce identical UUIDs, timestamps, and CID."
 
 # ── Catch-all for subcommand arguments ───────────────────────────────
 ifneq ($(filter setup generate,$(firstword $(MAKECMDGOALS))),)
