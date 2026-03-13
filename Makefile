@@ -30,7 +30,7 @@ GEN_OUTPUT    := $(GENERATED_DIR)/output
 GEN_CONFIGS   := $(ASSET_TOOLS)/configs
 
 # ── Subcommand support ───────────────────────────────────────────────
-# Enables:  make generate clean, make setup qc
+# Enables:  make generate clean, make generate validate
 SUBCMD = $(word 2,$(MAKECMDGOALS))
 
 # ── Guards ───────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ define check_dev_setup
 	}
 endef
 
-.PHONY: all setup install lint format validate generate clean help
+.PHONY: all setup install lint format validate generate clean wizard help
 
 # Default target
 all: lint validate
@@ -52,25 +52,20 @@ all: lint validate
 # ── Setup & Install ──────────────────────────────────────────────────
 
 setup: $(ACTIVATE_SCRIPT)
-ifeq ($(SUBCMD),qc)
-	$(call check_dev_setup)
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
 	@echo "[INFO] Installing quality checker runtime dependencies..."
 	@"$(PYTHON)" -m pip install -e "$(ASSET_TOOLS)[qc-deps]" --quiet
 	@echo "[INFO] Installing quality checker packages (--no-deps to avoid upstream lxml/numpy constraints)..."
 	@"$(PYTHON)" -m pip install poetry-core --quiet 2>/dev/null || true
 	@"$(PYTHON)" -m pip install --no-deps \
-		"asam-qc-baselib@git+https://github.com/asam-ev/qc-baselib-py@main" \
+		"asam-qc-baselib@git+https://github.com/asam-ev/qc-baselib-py@v1.1.0" \
 		"asam-qc-opendrive@git+https://github.com/jdsika/qc-opendrive@fix-contact-point-missing-road-link" \
-		"asam-qc-openscenarioxml@git+https://github.com/asam-ev/qc-openscenarioxml@main" \
+		"asam-qc-openscenarioxml@git+https://github.com/asam-ev/qc-openscenarioxml@v1.0.0" \
 		"openmsl-qc-opendrive@git+https://github.com/openMSL/sl-5-9-openmsl-qc-opendrive@main"
 # NOTE: qc-opendrive is pinned to a fork pending upstream PR asam-ev/qc-opendrive#139.
-# Switch back to @main once the PR is merged.
-	@echo "[OK] Quality checkers installed"
-else
-	@"$(MAKE)" -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
+# Switch back to @v1.0.0 (or newer) once the PR is merged.
 	@"$(PYTHON)" -m pre_commit install --allow-missing-config >/dev/null 2>&1 || true
 	@echo "[OK] Setup complete. Activate with: $(ACTIVATE_HINT)"
-endif
 
 $(PYTHON):
 	@echo "[INFO] Creating virtual environment at $(VENV)..."
@@ -87,7 +82,7 @@ install:
 	@echo "[OK] Install complete"
 
 # ── Lint & Format ────────────────────────────────────────────────────
-# Root repo has no Python files — lint validates JSON-LD asset data.
+# Root repo has no Python files -- lint validates JSON-LD asset data.
 
 lint: validate
 
@@ -146,16 +141,37 @@ sys.exit('[ERR] No input_manifest.json in $(GEN_INPUT)/. Stage input files first
 	@echo "[OK] Asset generated in $(GEN_OUTPUT)/"
 endif
 
+# ── Wizard (SD Creation Wizard frontend + API) ───────────────────────
+
+wizard:
+ifeq ($(SUBCMD),stop)
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" wizard stop
+else
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" wizard
+endif
+
 # ── Clean ────────────────────────────────────────────────────────────
 
 clean:
 ifneq ($(firstword $(MAKECMDGOALS)),generate)
-	@echo "[INFO] Cleaning..."
-	@rm -rf build/ dist/ .pytest_cache/ .mypy_cache/ "$(GENERATED_DIR)"
-	@find . -maxdepth 3 -type d -name __pycache__ -not -path "*/$(ASSET_TOOLS)/*" -exec rm -rf {} + 2>/dev/null || true
-	@find . -maxdepth 1 -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+ifeq ($(SUBCMD),all)
+	@echo "[INFO] Cleaning everything..."
+	@rm -rf build/ dist/ .pytest_cache/ .mypy_cache/ "$(GEN_OUTPUT)"
+	@rm -rf *.egg-info
 	@rm -f *.zip
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" clean 2>/dev/null || true
+	@echo "[INFO] Removing virtual environment and submodules..."
+	@rm -rf "$(VENV)"
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" clean all 2>/dev/null || true
+	@echo "[OK] Full clean complete -- run 'make setup' to reinitialise"
+else
+	@echo "[INFO] Cleaning..."
+	@rm -rf build/ dist/ .pytest_cache/ .mypy_cache/ "$(GEN_OUTPUT)"
+	@rm -rf *.egg-info
+	@rm -f *.zip
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" clean 2>/dev/null || true
 	@echo "[OK] Cleaned"
+endif
 endif
 
 # ── Help ─────────────────────────────────────────────────────────────
@@ -163,8 +179,7 @@ endif
 help:
 	@echo "hd-map-asset-example -- Available Commands"
 	@echo ""
-	@echo "  make setup                   Create venv and install all dependencies"
-	@echo "  make setup qc                Also install quality checker tools (optional, slow)"
+	@echo "  make setup                   Create venv and install all dependencies (incl. QC tools)"
 	@echo "  make install                 Install packages"
 	@echo ""
 	@echo "  make generate                Run full pipeline: .xodr -> generated/ asset + zip"
@@ -174,7 +189,11 @@ help:
 	@echo "  make lint                    Lint (validates asset JSON-LD)"
 	@echo "  make validate                Validate generated/output/ asset against SHACL"
 	@echo ""
+	@echo "  make wizard                  Start SD Creation Wizard (Podman, auto-setup if needed)"
+	@echo "  make wizard stop             Stop the wizard containers"
+	@echo ""
 	@echo "  make clean                   Remove all build artifacts, caches, and generated/"
+	@echo "  make clean all               Clean + remove venv and submodules (full reset)"
 	@echo ""
 	@echo "Debug logging:"
 	@echo "  SL58_LOG_MODE=debug make generate"
@@ -185,7 +204,7 @@ help:
 	@echo "  Same input files produce identical UUIDs, timestamps, and CID."
 
 # ── Catch-all for subcommand arguments ───────────────────────────────
-ifneq ($(filter setup generate,$(firstword $(MAKECMDGOALS))),)
+ifneq ($(filter setup generate wizard clean,$(firstword $(MAKECMDGOALS))),)
 %:
 	@:
 endif

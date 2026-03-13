@@ -277,7 +277,11 @@ make generate clean     # Remove generated/output/ directory
 make validate           # Validate the generated asset against SHACL
 make lint               # Lint (same as validate)
 
+make wizard             # Start SD Creation Wizard (Podman, auto-setup if needed)
+make wizard stop        # Stop the wizard containers
+
 make clean              # Remove all build artifacts, caches, and generated/
+make clean all          # Clean + remove venv and submodules (full reset)
 ```
 
 ## FAQ
