@@ -293,6 +293,11 @@ Supported file types and categories:
 - Contains `ontology-management-base` as a nested submodule with all SHACLs and ontologies needed for validation.
 - Versioned git submodule of [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools).
 
+📁 `submodules/EVES`
+
+- The [EVES specification](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html) — defines the structure and requirements for Simulation Assets in the ENVITED-X Dataspace.
+- Versioned git submodule of [EVES](https://github.com/ASCS-eV/EVES).
+
 📄 `CONTRIBUTING.md` → Contributing guidelines (DCO sign-off required)
 
 📄 `Makefile` → Central command center for all operations
@@ -376,7 +381,7 @@ The modern replacement is `input_manifest.json` (JSON-LD format). Both formats a
 ### Known Limitations
 
 - **Geocoding timeouts** — The `meta_data_extractor` uses the Nominatim API for reverse geocoding. If the API is slow or rate-limited, the pipeline may fail. Simply retry.
-- **Quality checkers require extra install** — The `[qc]` optional dependencies install from Git branches and may take a while. Without them, quality checking is skipped (no validation reports generated). If you see stale checker errors after switching branches, run `make clean all && make setup` to get a fresh environment.
+- **Quality checkers install from Git branches** — The `[qc]` optional dependencies (installed automatically by `make setup`) pull from Git branches and may take a while on first install. If you see stale checker errors after switching branches, run `make clean all && make setup` to get a fresh environment.
 - **Ontology versions** — The pipeline generates metadata using the **latest** ontology versions. Both current and older versions are valid but produce different JSON-LD structures.
 
 ### Podman / Wizard Troubleshooting

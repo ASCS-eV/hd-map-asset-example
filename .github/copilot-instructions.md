@@ -41,7 +41,12 @@ Both files use typed `@value`/`@type` pairs for literals and reference ontologie
 
 ### Submodules
 
-Only one direct submodule: `submodules/sl-5-8-asset-tools` (which contains `ontology-management-base` as a nested submodule). After cloning, initialize with:
+Two direct submodules:
+
+- `submodules/sl-5-8-asset-tools` — Asset creation and processing tools (which contains `ontology-management-base` as a nested submodule)
+- `submodules/EVES` — The [EVES specification](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html) that defines the structure and requirements for Simulation Assets in the ENVITED-X Dataspace
+
+After cloning, initialize with:
 
 ```bash
 make setup
