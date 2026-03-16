@@ -131,12 +131,11 @@ import pathlib, sys; \
 im = pathlib.Path('$(GEN_INPUT)') / 'input_manifest.json'; \
 sys.exit('[ERR] No input_manifest.json in $(GEN_INPUT)/. Stage input files first.') if not im.exists() else None; \
 "
-	@mkdir -p "$(GEN_OUTPUT)" 2>/dev/null || "$(PYTHON)" -c "import pathlib; pathlib.Path('$(GEN_OUTPUT)').mkdir(parents=True, exist_ok=True)"
-	@echo "[INFO] Running asset creation pipeline..."
-	@cd "$(GEN_INPUT)" && "$(CURDIR)/$(PYTHON)" -m asset_extraction.main \
-		input_manifest.json \
-		-config "$(CURDIR)/$(GEN_CONFIGS)" \
-		-out "$(CURDIR)/$(GEN_OUTPUT)"
+	@"$(MAKE)" -C "$(ASSET_TOOLS)" generate \
+		INPUT_DIR="$(CURDIR)/$(GEN_INPUT)" \
+		OUTPUT_DIR="$(CURDIR)/$(GEN_OUTPUT)" \
+		VENV="$(CURDIR)/$(VENV)" \
+		PYTHON="$(CURDIR)/$(PYTHON)"
 	@echo ""
 	@echo "[OK] Asset generated in $(GEN_OUTPUT)/"
 endif
@@ -185,6 +184,10 @@ help:
 	@echo "  make generate                Run full pipeline: .xodr -> generated/ asset + zip"
 	@echo "  make generate validate       Validate the generated asset"
 	@echo "  make generate clean          Remove generated/output/ directory"
+	@echo ""
+	@echo "  You can also run the pipeline for a custom input directory:"
+	@echo "  make -C submodules/sl-5-8-asset-tools generate \\"
+	@echo "      INPUT_DIR=/path/to/input OUTPUT_DIR=/path/to/output"
 	@echo ""
 	@echo "  make lint                    Lint (validates asset JSON-LD)"
 	@echo "  make validate                Validate generated/output/ asset against SHACL"

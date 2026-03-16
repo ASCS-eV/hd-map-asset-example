@@ -8,6 +8,50 @@ The asset is generated from source files in `generated/input/` using the pipelin
 
 All ENVITED-X Dataspace assets are defined according to [EVES-003](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html).
 
+## Prerequisites
+
+| Tool | Why | Install |
+|------|-----|---------|
+| **Python 3.12+** | Pipeline runtime | [python.org](https://www.python.org/downloads/), Microsoft Store, or `winget install Python.Python.3.12` |
+| **Git** | Submodule management | [git-scm.com](https://git-scm.com/downloads) (includes Git Bash on Windows) |
+| **GNU Make** | Task runner | see below |
+
+<details>
+<summary><strong>Windows — installing Make</strong></summary>
+
+**Git Bash / MSYS2** — Make is included if you selected the MSYS2 option during Git install, or install it with:
+
+```bash
+# Using Scoop (recommended)
+scoop install make
+
+# Using Chocolatey
+choco install make
+```
+
+**PowerShell** — The same `scoop` or `choco` commands work. After installing, `make` uses Git's bundled `sh.exe` for recipe execution, so it works from PowerShell, Git Bash, and CMD alike.
+
+**Without Make** — You can run the pipeline directly with Python (see [Option B](#option-b--run-the-pipeline-directly) below).
+
+</details>
+
+<details>
+<summary><strong>macOS / Linux</strong></summary>
+
+Make and Git are typically pre-installed. Install Python 3.12+ via your package manager:
+
+```bash
+# macOS
+brew install python@3.12
+
+# Ubuntu/Debian
+sudo apt install python3.12 python3.12-venv
+```
+
+</details>
+
+> **Podman** is only needed for `make wizard` (the SD Creation Wizard web UI). The pipeline itself does not require it. Podman is auto-installed by `make setup wizard` if missing.
+
 ## Quick Start
 
 ```bash
@@ -160,11 +204,12 @@ To create a new HD-Map asset from **your own** `.xodr` file, you have two option
 
 The pipeline will run all steps and produce a fresh asset in `generated/output/`.
 
-### Option B — Run the pipeline manually
+### Option B — Run the pipeline directly
 
-Create a working directory with all your input files **and** an `uploadedFiles.json` manifest:
+You can invoke the pipeline from any directory without `make`. This works in **any shell** — Bash, PowerShell, CMD:
 
 ```bash
+# Create a working directory with your input files
 mkdir -p my_asset/input my_asset/output
 
 # Copy your files into the input directory
@@ -174,7 +219,11 @@ cp path/to/documentation.pdf   my_asset/input/
 cp LICENSE                     my_asset/input/
 ```
 
-Create `my_asset/input/uploadedFiles.json`:
+Create `my_asset/input/input_manifest.json` (JSON-LD format — recommended):
+
+> See `generated/input/input_manifest.json` in this repo for a complete example.
+
+Or create `my_asset/input/uploadedFiles.json` (legacy array format):
 
 ```json
 [
@@ -202,28 +251,23 @@ Create `my_asset/input/uploadedFiles.json`:
 ]
 ```
 
-Run the pipeline:
+Run the pipeline (paths can be relative or absolute — no need to `cd` into the input directory):
 
 ```bash
-cd my_asset/input
-
-# Windows:
-../../.venv/Scripts/python -m asset_extraction.main \
-    uploadedFiles.json \
-    -config ../../submodules/sl-5-8-asset-tools/configs \
-    -out ../output
-
-# macOS/Linux:
-../../.venv/bin/python -m asset_extraction.main \
-    uploadedFiles.json \
-    -config ../../submodules/sl-5-8-asset-tools/configs \
-    -out ../output
+# Bash / Git Bash / macOS / Linux:
+.venv/bin/python -m asset_extraction.main \
+    my_asset/input/uploadedFiles.json \
+    -config submodules/sl-5-8-asset-tools/configs \
+    -out my_asset/output
 ```
 
-> ⚠️ **Important path rules:**
-> - All input files **must be in the same directory** as `uploadedFiles.json`
-> - Use **bare filenames** (no subdirectories) in `uploadedFiles.json`
-> - The **output directory must be separate** from the input directory
+```powershell
+# PowerShell:
+.\.venv\Scripts\python.exe -m asset_extraction.main `
+    my_asset\input\uploadedFiles.json `
+    -config submodules\sl-5-8-asset-tools\configs `
+    -out my_asset\output
+```
 
 Supported file types and categories:
 
@@ -308,10 +352,26 @@ You need to use the following ontology from [Ontology Management Base Repository
 
 ### What does the pipeline need to run?
 
-- **Python 3.12+** and `make`
-- The `sl-5-8-asset-tools` submodule (initialized via `git submodule update --init --recursive`)
+- **Python 3.12+**, **Git**, and **GNU Make** (see [Prerequisites](#prerequisites))
+- The `sl-5-8-asset-tools` submodule (initialized via `git submodule update --init --recursive` or `make setup`)
 - **Internet connection** — required only for reverse geocoding (Nominatim API); ontology schemas and SHACL shapes are provided locally by the `ontology-management-base` submodule
 - For quality checking (optional): run `make setup qc` to install the ASAM and OpenMSL checker tools from GitHub
+
+### Debug logging
+
+```bash
+# Bash / Git Bash / macOS / Linux:
+SL58_LOG_MODE=debug make generate
+
+# PowerShell:
+$env:SL58_LOG_MODE = "debug"; make generate
+
+# Or with direct Python invocation:
+$env:SL58_LOG_MODE = "debug"
+.\.venv\Scripts\python.exe -m asset_extraction.main ...
+```
+
+Shows full subprocess command lines, stdout/stderr, and tracebacks.
 
 ### What is the `uploadedFiles.json`?
 
@@ -326,5 +386,15 @@ When using `make generate`, this file is created automatically.
 ### Known Limitations
 
 - **Geocoding timeouts** — The `meta_data_extractor` uses the Nominatim API for reverse geocoding. If the API is slow or rate-limited, the pipeline may fail. Simply retry.
-- **Quality checkers require extra install** — The `[qc]` optional dependencies install from Git branches and may take a while. Without them, quality checking is skipped (no validation reports generated).
+- **Quality checkers require extra install** — The `[qc]` optional dependencies install from Git branches and may take a while. Without them, quality checking is skipped (no validation reports generated). If you see stale checker errors after switching branches, run `make clean all && make setup` to get a fresh environment.
 - **Ontology versions** — The pipeline generates metadata using the **latest** ontology versions. Both current and older versions are valid but produce different JSON-LD structures.
+
+### Podman / Wizard Troubleshooting
+
+The SD Creation Wizard (`make wizard`) uses Podman containers. Common issues on Windows:
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `CreateFile \\.\pipe\docker_engine: All pipe instances are busy` | Docker Desktop is running and holds the Docker API pipe | Quit Docker Desktop before starting Podman, or run `podman machine stop && podman machine start` |
+| `machine not in running state` | Podman machine failed to start | Run `podman machine rm` then `podman machine init && podman machine start` |
+| Port 4200 or 8080 already in use | Another process holds the port | `make wizard stop` first, or stop the other process |
