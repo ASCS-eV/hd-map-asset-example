@@ -73,7 +73,7 @@ $(PYTHON):
 	@"$(PYTHON)" -m pip install --upgrade pip
 
 $(ACTIVATE_SCRIPT): $(PYTHON)
-	@"$(MAKE)" -C "$(ASSET_TOOLS)" setup VENV="$(CURDIR)/$(VENV)" PYTHON="$(CURDIR)/$(PYTHON)"
+	@"$(PYTHON)" -m pip install -e "$(ASSET_TOOLS)[dev]" --quiet
 	@touch "$(ACTIVATE_SCRIPT)"
 
 install:

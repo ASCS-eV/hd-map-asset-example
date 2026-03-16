@@ -141,15 +141,7 @@ make setup
 
 Creates a Python virtual environment (`.venv/`) and installs the pipeline with all dependencies.
 
-### Step 2 — (Optional) Install quality checkers
-
-```bash
-make setup qc
-```
-
-Installs the [ASAM](https://github.com/asam-ev/qc-opendrive) and [OpenMSL](https://github.com/openMSL/sl-5-9-openmsl-qc-opendrive) quality checkers from GitHub. Without these, the pipeline skips quality checking and produces no validation reports. The install takes a few minutes.
-
-### Step 3 — Generate the asset
+### Step 2 — Generate the asset
 
 ```bash
 make generate
@@ -175,7 +167,7 @@ generated/output/<AssetName>/
 
 > 🌐 **Internet required for geocoding only** — reverse geocoding uses the Nominatim API. Ontology schemas and SHACL shapes are bundled via the `ontology-management-base` submodule.
 
-### Step 4 — Validate the generated asset
+### Step 3 — Validate the generated asset
 
 ```bash
 make generate validate
@@ -183,7 +175,7 @@ make generate validate
 
 Runs the SHACL validation suite against the generated `manifest.json` and `hdmap.json`.
 
-### Step 5 — Clean up
+### Step 4 — Clean up
 
 ```bash
 make generate clean
@@ -310,8 +302,7 @@ Supported file types and categories:
 ```bash
 make help               # Show all available commands
 
-make setup              # Create venv and install all dependencies
-make setup qc           # Also install quality checker tools (optional, slow)
+make setup              # Create venv and install all dependencies (incl. QC tools)
 make install            # Install packages
 
 make generate           # Run full pipeline: .xodr → generated/ asset + zip
@@ -355,9 +346,9 @@ You need to use the following ontology from [Ontology Management Base Repository
 - **Python 3.12+**, **Git**, and **GNU Make** (see [Prerequisites](#prerequisites))
 - The `sl-5-8-asset-tools` submodule (initialized via `git submodule update --init --recursive` or `make setup`)
 - **Internet connection** — required only for reverse geocoding (Nominatim API); ontology schemas and SHACL shapes are provided locally by the `ontology-management-base` submodule
-- For quality checking (optional): run `make setup qc` to install the ASAM and OpenMSL checker tools from GitHub
+- Quality checkers (ASAM + OpenMSL) are installed automatically by `make setup`
 
-### Debug logging
+### How do I enable debug logging?
 
 ```bash
 # Bash / Git Bash / macOS / Linux:
@@ -375,13 +366,13 @@ Shows full subprocess command lines, stdout/stderr, and tracebacks.
 
 ### What is the `uploadedFiles.json`?
 
-It's a simple JSON array that tells the pipeline which files to process and how to categorize them. Each entry has:
+It's the legacy input format — a simple JSON array that tells the pipeline which files to process and how to categorize them. Each entry has:
 - `filename` — path or URL to the file
 - `type` — what kind of file it is (`Asset`, `Document`, `Image`, `License`, etc.)
 - `category` — the EVES-003 category (`isSimulationData`, `isDocumentation`, `isMedia`, etc.)
 - `did` (optional) — a decentralized identifier for the asset
 
-When using `make generate`, this file is created automatically.
+The modern replacement is `input_manifest.json` (JSON-LD format). Both formats are supported. See `generated/input/input_manifest.json` for a complete example.
 
 ### Known Limitations
 
