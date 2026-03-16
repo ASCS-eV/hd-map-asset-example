@@ -80,6 +80,57 @@ make setup
 
 The `generated/input/` folder contains the **pipeline inputs** — an OpenDRIVE `.xodr` file plus supplementary material (images, docs, license). `make generate` uses the [sl-5-8-asset-tools](https://github.com/openMSL/sl-5-8-asset-tools) pipeline to produce a complete EVES-003 asset in `generated/output/`.
 
+### Input → Output at a Glance
+
+```
+  generated/input/                              generated/output/<AssetName>/
+  ├── input_manifest.json  ─── make generate ──►  ├── simulation-data/   (.xodr + .bjson)
+  ├── YourMap.xodr                                ├── metadata/          (hdmap.json)
+  ├── impression-01.png                           ├── media/             (GeoJSON, PNGs, 3D)
+  ├── documentation.pdf                           ├── documentation/     (PDF, stats)
+  ├── LICENSE                                     ├── validation-reports/(QC results)
+  └── (optional extras)                           ├── manifest.json
+                                                  └── LICENSE
+                                                ──► <CID>.zip  (release archive)
+```
+
+**You provide:** a `.xodr` map file, an `input_manifest.json` describing your files, and optional supplementary material (screenshots, docs, license).
+
+**The pipeline generates:** domain metadata (`hdmap.json`), GeoJSON maps, 3D preview data, quality check reports, a search index, and the `manifest.json` content registry — all packaged as an EVES-003 asset.
+
+### Two Workflows for Creating Assets
+
+| | **Automated (default)** | **Wizard-assisted (optional)** |
+|---|---|---|
+| **How** | `make generate` | `make wizard` → edit in browser → `make generate` |
+| **Metadata source** | Auto-extracted from `.xodr` + `input_manifest.json` | Auto-extracted + manually enriched via SHACL-driven web form |
+| **When to use** | CI/CD, standard assets, bulk processing | First-time asset creation, when you need to add domain-specific details the extractor can't infer |
+| **Requires** | Python, Make | Python, Make, Podman |
+
+**Automated path:** Place your files in `generated/input/`, create an `input_manifest.json`, run `make generate`. The pipeline auto-extracts all metadata from your `.xodr` file — road types, lane counts, georeferencing, format version, etc.
+
+**Wizard path:** Start the SD Creation Wizard with `make wizard`, open `http://localhost:4200`, load the SHACL shapes for your domain, and fill in any metadata the extractor cannot infer. Export the enriched JSON-LD, place it in your input folder, then run `make generate`.
+
+### Metadata and Gaia-X
+
+The generated metadata uses the [Gaia-X Trust Framework](https://gaia-x.eu/) vocabulary alongside ENVITED-X domain ontologies. This enables Simulation Assets to participate in Gaia-X-compliant data ecosystems.
+
+**What Gaia-X adds to your asset:**
+
+| Property | Source | Example |
+|----------|--------|---------|
+| `gx:name` | Auto-extracted from `.xodr` filename | `"Testfeld_Niedersachsen_..."` |
+| `gx:description` | Auto-extracted from `.xodr` content | `"road network"` |
+| `gx:license` | Auto-detected from `LICENSE` file | `"MPL-2.0"` |
+| `gx:copyrightOwnedBy` | Parsed from license text | `"see contributors"` |
+| `gx:resourcePolicy` | Default | `"allow"` |
+
+These properties live inside `metadata/hdmap.json` as part of an `envited-x:ResourceDescription` node. The asset is identified by a DID (`did:web:registry.gaia-x.eu:HdMap:{UUID}`).
+
+**Design pattern:** ENVITED-X uses a wrapper architecture — Gaia-X properties go in closed GX-compliant nodes, while domain-specific properties (road types, lane geometry, format version) go in open ENVITED-X shapes. This keeps domain extensions from violating Gaia-X's strict SHACL constraints.
+
+> **You don't need to know Gaia-X to use this repo.** The pipeline handles all GX compliance automatically. The wizard provides a form UI if you want to inspect or edit the GX metadata.
+
 ### What Gets Auto-Generated vs. Provided as Input
 
 Everything begins with **one input file**: an OpenDRIVE (`.xodr`) HD-Map file. The pipeline auto-generates most of the asset — the rest is supplementary material you provide (screenshots, docs, license).
@@ -331,7 +382,7 @@ make clean all          # Clean + remove venv and submodules (full reset)
 
 - **Preparation:** Ensure you understood this repository and the necessary data to create a SimulationAsset for the ENVITED-X Data Space and familiarize yourself with the concept of an asset ([EVES-003](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html)).
 
-- **Guided Web UI:** You can use the [GaiaX 4 PLC-AAD Provider Tools](https://github.com/GAIA-X4PLC-AAD/provider-tools) to create your own asset in a guided way.
+- **Guided Web UI:** Run `make wizard` to start the SD Creation Wizard — a SHACL-driven web form for inspecting and enriching asset metadata. See [Two Workflows for Creating Assets](#two-workflows-for-creating-assets) above.
 
 ### Which roles can I define for access management?
 
