@@ -2,6 +2,8 @@
 # Build command center for common development tasks
 
 # Allow parent makefiles to override the venv path/tooling.
+# NOTE: VENV must be a relative path — the root Makefile prefixes it with CURDIR
+# when delegating to this submodule.
 VENV ?= .venv
 
 # Submodule path aliases (hide deep paths)
@@ -10,6 +12,7 @@ OMB         := $(ASSET_TOOLS)/submodules/ontology-management-base
 
 # OS detection for cross-platform support (Windows vs Unix)
 ifeq ($(OS),Windows_NT)
+    SHELL            := sh
     VENV_BIN         := $(VENV)/Scripts
     PYTHON           ?= $(VENV_BIN)/python.exe
     BOOTSTRAP_PYTHON ?= python
@@ -30,7 +33,7 @@ GEN_OUTPUT    := $(GENERATED_DIR)/output
 GEN_CONFIGS   := $(ASSET_TOOLS)/configs
 
 # ── Subcommand support ───────────────────────────────────────────────
-# Enables:  make generate clean, make generate validate
+# Enables:  make generate clean,  make wizard stop
 SUBCMD = $(word 2,$(MAKECMDGOALS))
 
 # ── Guards ───────────────────────────────────────────────────────────
@@ -154,7 +157,6 @@ ifeq ($(SUBCMD),all)
 	@rm -rf build/ dist/ .pytest_cache/ .mypy_cache/ "$(GEN_OUTPUT)"
 	@rm -rf *.egg-info
 	@rm -f *.zip
-	@"$(MAKE)" -C "$(ASSET_TOOLS)" clean 2>/dev/null || true
 	@echo "[INFO] Removing virtual environment and submodules..."
 	@rm -rf "$(VENV)"
 	@"$(MAKE)" -C "$(ASSET_TOOLS)" clean all 2>/dev/null || true
@@ -167,6 +169,8 @@ else
 	@"$(MAKE)" -C "$(ASSET_TOOLS)" clean 2>/dev/null || true
 	@echo "[OK] Cleaned"
 endif
+else
+	@:
 endif
 
 # ── Help ─────────────────────────────────────────────────────────────
@@ -202,7 +206,7 @@ help:
 	@echo "  Same input files produce identical UUIDs, timestamps, and CID."
 
 # ── Catch-all for subcommand arguments ───────────────────────────────
-ifneq ($(filter setup generate wizard clean,$(firstword $(MAKECMDGOALS))),)
+ifneq ($(filter setup generate wizard clean install,$(firstword $(MAKECMDGOALS))),)
 %:
 	@:
 endif
