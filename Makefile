@@ -94,7 +94,6 @@ format:
 # Validates JSON-LD files for every generated asset in the output directory.
 
 validate:
-ifneq ($(firstword $(MAKECMDGOALS)),generate)
 	$(call check_dev_setup)
 	@"$(PYTHON)" -c "\
 import pathlib, sys; \
@@ -113,7 +112,6 @@ print(' '.join(all_paths)); \
 	rm -f .validate_paths && \
 	echo "[OK] Validation complete" || \
 	{ cat .validate_paths 2>/dev/null; rm -f .validate_paths; exit 1; }
-endif
 
 # ── Generate (full pipeline) ─────────────────────────────────────────
 
@@ -122,8 +120,6 @@ ifeq ($(SUBCMD),clean)
 	@echo "[INFO] Removing generated/output/ directory..."
 	@"$(PYTHON)" -c "import shutil; shutil.rmtree('$(GEN_OUTPUT)', ignore_errors=True)"
 	@echo "[OK] Generated output removed (input/ blueprint preserved)"
-else ifeq ($(SUBCMD),validate)
-	@"$(MAKE)" validate
 else
 	$(call check_dev_setup)
 	@"$(PYTHON)" -c "\
@@ -182,7 +178,6 @@ help:
 	@echo "  make install                 Install packages"
 	@echo ""
 	@echo "  make generate                Run full pipeline: .xodr -> generated/ asset + zip"
-	@echo "  make generate validate       Validate the generated asset"
 	@echo "  make generate clean          Remove generated/output/ directory"
 	@echo ""
 	@echo "  You can also run the pipeline for a custom input directory:"

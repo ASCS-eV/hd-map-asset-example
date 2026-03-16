@@ -66,7 +66,7 @@ make setup
 make generate
 
 # 4. Validate the generated asset
-make generate validate
+make validate
 ```
 
 If already cloned without submodules:
@@ -170,7 +170,7 @@ generated/output/<AssetName>/
 ### Step 3 — Validate the generated asset
 
 ```bash
-make generate validate
+make validate
 ```
 
 Runs the SHACL validation suite against the generated `manifest.json` and `hdmap.json`.
@@ -306,7 +306,6 @@ make setup              # Create venv and install all dependencies (incl. QC too
 make install            # Install packages
 
 make generate           # Run full pipeline: .xodr → generated/ asset + zip
-make generate validate  # Validate the generated asset
 make generate clean     # Remove generated/output/ directory
 
 make validate           # Validate the generated asset against SHACL
