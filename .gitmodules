@@ -5,3 +5,4 @@
 [submodule "submodules/EVES"]
 	path = submodules/EVES
 	url = https://github.com/ASCS-eV/EVES.git
+	branch = main

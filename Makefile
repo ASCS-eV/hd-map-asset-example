@@ -115,14 +115,21 @@ bad = [str(d) for d in dirs if not [p for p in [d / 'manifest.json', d / 'metada
 sys.exit('[ERR] No manifest or metadata found in: ' + ', '.join(bad)) if bad else None; \
 all_paths = [str(p) for d in dirs for p in [d / 'manifest.json', d / 'metadata' / 'hdmap.json'] if p.exists()]; \
 print(' '.join(all_paths)); \
-" > .validate_paths 2>&1 && \
-	"$(PYTHON)" -m src.tools.validators.validation_suite \
-		--run check-data-conformance \
-		--data-paths $$(cat .validate_paths) \
-		--artifacts "$(OMB)/artifacts" && \
-	rm -f .validate_paths && \
-	echo "[OK] Validation complete" || \
-	{ cat .validate_paths 2>/dev/null; rm -f .validate_paths; exit 1; }
+" > .validate_paths 2>&1; \
+	rc=$$?; \
+	if grep -q '^\[SKIP\]' .validate_paths 2>/dev/null; then \
+		cat .validate_paths; rm -f .validate_paths; \
+	elif [ $$rc -ne 0 ]; then \
+		cat .validate_paths 2>/dev/null; rm -f .validate_paths; exit 1; \
+	else \
+		"$(PYTHON)" -m src.tools.validators.validation_suite \
+			--run check-data-conformance \
+			--data-paths $$(cat .validate_paths) \
+			--artifacts "$(OMB)/artifacts" && \
+		rm -f .validate_paths && \
+		echo "[OK] Validation complete" || \
+		{ rm -f .validate_paths; exit 1; }; \
+	fi
 
 # ── Generate (full pipeline) ─────────────────────────────────────────
 

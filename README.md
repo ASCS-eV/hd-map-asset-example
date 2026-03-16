@@ -406,7 +406,7 @@ make generate           # Run full pipeline: .xodr → generated/ asset + zip
 make generate clean     # Remove generated/output/ directory
 
 make validate           # Validate the generated asset against SHACL
-make lint               # Lint (same as validate)
+make lint               # Lint (validate + markdown lint)
 
 make wizard             # Start SD Creation Wizard (Podman, auto-setup if needed)
 make wizard stop        # Stop the wizard containers
