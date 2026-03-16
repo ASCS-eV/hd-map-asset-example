@@ -87,11 +87,19 @@ install:
 # ── Lint & Format ────────────────────────────────────────────────────
 # Root repo has no Python files -- lint validates JSON-LD asset data.
 
-lint: validate
+lint: validate lint-md
 
-format:
-	$(call check_dev_setup)
-	@echo "[INFO] Nothing to format (no Python files in root repo)"
+lint-md:
+	@echo "[INFO] Linting Markdown..."
+	@npx --yes markdownlint-cli2 "README.md" "CONTRIBUTING.md"
+	@echo "[OK] Markdown lint passed"
+
+format: format-md
+
+format-md:
+	@echo "[INFO] Formatting Markdown..."
+	@npx --yes markdownlint-cli2 --fix "README.md" "CONTRIBUTING.md"
+	@echo "[OK] Markdown format complete"
 
 # ── Validate ─────────────────────────────────────────────────────────
 # Validates JSON-LD files for every generated asset in the output directory.
@@ -188,7 +196,9 @@ help:
 	@echo "  make -C submodules/sl-5-8-asset-tools generate \\"
 	@echo "      INPUT_DIR=/path/to/input OUTPUT_DIR=/path/to/output"
 	@echo ""
-	@echo "  make lint                    Lint (validates asset JSON-LD)"
+	@echo "  make lint                    Lint (validates asset JSON-LD + Markdown)"
+	@echo "  make lint-md                 Lint Markdown files only"
+	@echo "  make format                  Auto-fix Markdown lint issues"
 	@echo "  make validate                Validate generated/output/ asset against SHACL"
 	@echo ""
 	@echo "  make wizard                  Start SD Creation Wizard (Podman, auto-setup if needed)"

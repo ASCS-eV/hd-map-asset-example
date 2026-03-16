@@ -1,12 +1,21 @@
 # HD-Map Asset Example
 
-This repository serves as a reference for onboarding a HD-Map asset into the ENVITED-X Dataspace and can be used as a template for other dataspaces as well. It contains the full description as **`manifest.json`** in addition to a consistent example of an HD-Map asset data.
+This repository demonstrates how to transform an [ASAM OpenDRIVE](https://www.asam.net/standards/detail/opendrive/) map (`.xodr`) into a **Simulation Asset** — a standardized, quality-checked, machine-readable package that can be shared with partners and integrated into simulation workflows.
 
-A complete **`asset`** in a specific domain includes the data itself and all necessary files for describing, evaluating, and visualizing the dataset.
+A Simulation Asset enriches raw map data with:
 
-The asset is generated from source files in `generated/input/` using the pipeline, and the release zip can be downloaded as an artifact from the latest release.
+- **Structured metadata** — road types, lane counts, geolocation, format version (JSON-LD)
+- **Quality reports** — automated ASAM and OpenMSL compliance checks
+- **Visual previews** — GeoJSON maps, bounding box, 3D road/lane geometry
+- **Access control** — per-file visibility roles (owner, registered, public) for data marketplace use
+- **Content-addressed packaging** — deterministic CID-named archive for integrity verification
 
-All ENVITED-X Dataspace assets are defined according to [EVES-003](https://ascs-ev.github.io/EVES/EVES-003/eves-003.html).
+The asset structure follows [EVES-003][eves-003], the specification that defines folder
+layout and metadata schemas for Simulation Assets in the
+[ENVITED-X Dataspace](https://2025.2.envited-x.net).
+This repository serves as both a working reference and a template for creating new assets.
+
+[eves-003]: https://ascs-ev.github.io/EVES/EVES-003/eves-003.html
 
 ## Prerequisites
 
@@ -56,7 +65,7 @@ sudo apt install python3.12 python3.12-venv
 
 ```bash
 # 1. Clone with submodules
-git clone --recurse-submodules <repo-url>
+git clone --recurse-submodules https://github.com/ASCS-eV/hd-map-asset-example.git
 cd hd-map-asset-example
 
 # 2. Install everything
@@ -82,7 +91,7 @@ The `generated/input/` folder contains the **pipeline inputs** — an OpenDRIVE 
 
 ### Input → Output at a Glance
 
-```
+```text
   generated/input/                              generated/output/<AssetName>/
   ├── input_manifest.json  ─── make generate ──►  ├── simulation-data/   (.xodr + .bjson)
   ├── YourMap.xodr                                ├── metadata/          (hdmap.json)
@@ -154,7 +163,7 @@ Everything begins with **one input file**: an OpenDRIVE (`.xodr`) HD-Map file. T
 
 The asset creation pipeline runs as a sequence of modular steps, each building on the previous one's output:
 
-```
+```text
   Your .xodr file  ──►  meta_data_extractor  ──►  jsonLD_creator (asset)
                          Parse .xodr XML            Build hdmap.json
                          🌐 geocoding
@@ -163,7 +172,7 @@ The asset creation pipeline runs as a sequence of modular steps, each building o
          ├──►  shacl_combiner ──► jsonLD_validator
          │     Combine SHACL shapes    Validate metadata
          │
-         ├──►  qualitychecker_caller   (optional: needs make setup qc)
+         ├──►  qualitychecker_caller
          │     Run ASAM + OpenMSL checks → validation-reports/
          │
          ├──►  xodr_routing_creator
@@ -199,13 +208,14 @@ make generate
 ```
 
 This single command:
+
 1. **Reads** the `input_manifest.json` blueprint from `generated/input/`
 2. **Runs** the full pipeline → outputs to `generated/output/<AssetName>/`
 3. **Creates** a release-ready zip at `generated/output/<CID>.zip`
 
 The generated asset contains the complete EVES-003 folder structure:
 
-```
+```text
 generated/output/<AssetName>/
 ├── simulation-data/    ← .xodr + .bjson search index
 ├── metadata/           ← hdmap.json (JSON-LD)
@@ -242,10 +252,68 @@ To create a new HD-Map asset from **your own** `.xodr` file, you have two option
 
 1. Replace the `.xodr` in `generated/input/` with your own
 2. Replace images and docs in `generated/input/` with yours
-3. Update `generated/input/input_manifest.json` to list your files
+3. Update `generated/input/input_manifest.json` to list your files (see below)
 4. Run `make generate clean && make generate`
 
 The pipeline will run all steps and produce a fresh asset in `generated/output/`.
+
+#### Writing your `input_manifest.json`
+
+The `input_manifest.json` tells the pipeline which files to process, how to categorize them, and who can access them. Here's a minimal example:
+
+```json
+{
+  "@context": [
+    "https://w3id.org/ascs-ev/envited-x/manifest/v5/",
+    { "envited-x": "https://w3id.org/ascs-ev/envited-x/envited-x/v3/" }
+  ],
+  "@id": "did:web:registry.gaia-x.eu:HdMap:generated",
+  "@type": "envited-x:Manifest",
+  "hasArtifacts": [
+    {
+      "@type": "Link",
+      "hasCategory": { "@id": "envited-x:isSimulationData" },
+      "hasAccessRole": { "@id": "envited-x:isOwner" },
+      "hasFileMetadata": {
+        "@type": "FileMetadata",
+        "filePath": "your_map.xodr",
+        "mimeType": "application/xml"
+      }
+    },
+    {
+      "@type": "Link",
+      "hasCategory": { "@id": "envited-x:isMedia" },
+      "hasAccessRole": { "@id": "envited-x:isPublic" },
+      "hasFileMetadata": {
+        "@type": "FileMetadata",
+        "filePath": "screenshot.png",
+        "mimeType": "image/png"
+      }
+    }
+  ],
+  "hasLicense": {
+    "@type": "Link",
+    "hasCategory": { "@id": "envited-x:isLicense" },
+    "hasAccessRole": { "@id": "envited-x:isPublic" },
+    "hasFileMetadata": {
+      "@type": "FileMetadata",
+      "filePath": "LICENSE",
+      "mimeType": "text/plain"
+    }
+  }
+}
+```
+
+**Field reference:**
+
+| Field | Purpose | Values |
+|-------|---------|--------|
+| `filePath` | Filename relative to the input directory | Any filename present in the folder |
+| `mimeType` | MIME type of the file | `application/xml`, `image/png`, `application/pdf`, `text/plain`, etc. |
+| `hasCategory` | EVES-003 category | `envited-x:isSimulationData`, `envited-x:isMedia`, `envited-x:isDocumentation`, `envited-x:isLicense` |
+| `hasAccessRole` | Who can access this file | `envited-x:isOwner` (download), `envited-x:isRegistered` (view), `envited-x:isPublic` (browse) |
+
+> **LICENSE is required.** Every asset must declare a license via the `hasLicense` field. See `generated/input/input_manifest.json` for a complete working example.
 
 ### Option B — Run the pipeline directly
 
@@ -262,44 +330,12 @@ cp path/to/documentation.pdf   my_asset/input/
 cp LICENSE                     my_asset/input/
 ```
 
-Create `my_asset/input/input_manifest.json` (JSON-LD format — recommended):
-
-> See `generated/input/input_manifest.json` in this repo for a complete example.
-
-Or create `my_asset/input/uploadedFiles.json` (legacy array format):
-
-```json
-[
-  {
-    "filename": "your_map.xodr",
-    "type": "Asset",
-    "category": "isSimulationData",
-    "did": "did:key:yourUniqueIdentifier"
-  },
-  {
-    "filename": "documentation.pdf",
-    "type": "Document",
-    "category": "isDocumentation"
-  },
-  {
-    "filename": "screenshot.png",
-    "type": "Image",
-    "category": "isMedia"
-  },
-  {
-    "filename": "LICENSE",
-    "type": "License",
-    "category": "isLicense"
-  }
-]
-```
-
-Run the pipeline (paths can be relative or absolute — no need to `cd` into the input directory):
+Create `my_asset/input/input_manifest.json` using the template above, then run:
 
 ```bash
 # Bash / Git Bash / macOS / Linux:
 .venv/bin/python -m asset_extraction.main \
-    my_asset/input/uploadedFiles.json \
+    my_asset/input/input_manifest.json \
     -config submodules/sl-5-8-asset-tools/configs \
     -out my_asset/output
 ```
@@ -307,21 +343,26 @@ Run the pipeline (paths can be relative or absolute — no need to `cd` into the
 ```powershell
 # PowerShell:
 .\.venv\Scripts\python.exe -m asset_extraction.main `
-    my_asset\input\uploadedFiles.json `
+    my_asset\input\input_manifest.json `
     -config submodules\sl-5-8-asset-tools\configs `
     -out my_asset\output
 ```
 
-Supported file types and categories:
+> **Legacy format:** The pipeline also accepts `uploadedFiles.json` (a simple JSON array). See the [FAQ](#what-is-the-uploadedfilesjson) for details. New projects should use `input_manifest.json`.
 
-| Type | Category | Examples |
-|------|----------|---------|
-| `Asset` | `isSimulationData` | `.xodr`, `.xosc`, `.crg` |
-| `Document` | `isDocumentation` | `.pdf`, `.txt`, `.md` |
-| `Image` | `isMedia` | `.png`, `.jpg`, `.jpeg` |
-| `Video` | `isMedia` | `.mp4` |
-| `3DPreview` | `isMedia` | `.json` (3D visualization data) |
-| `License` | `isLicense` | `LICENSE` |
+## What Partners Get
+
+When you share the generated asset (the `<CID>.zip`), recipients get a self-contained package they can evaluate without asking you anything:
+
+| What | How it helps partners |
+|------|----------------------|
+| **`manifest.json`** | Machine-readable content registry — partners' tools can automatically index, search, and verify every file in the asset |
+| **`metadata/hdmap.json`** | Structured domain metadata — road types, lane counts, coordinate system, geographic bounds — queryable without opening the map |
+| **`validation-reports/`** | Transparent quality — ASAM and OpenMSL compliance reports show exactly which checks passed or failed |
+| **`media/roadNetwork.geojson`** | Visual preview — partners can render the road network on a map without a specialized viewer |
+| **`media/3d_preview/`** | 3D geometry — roads, lanes, junctions, signals as lightweight JSON for web-based visualization |
+| **Access roles** | Per-file access control — you decide what's public (previews), registered-only (docs), or owner-only (raw data) |
+| **CID naming** | Content-addressed zip — the filename IS the hash, so partners can verify integrity without trusting the transport |
 
 ## Repo Structure
 
@@ -422,6 +463,7 @@ Shows full subprocess command lines, stdout/stderr, and tracebacks.
 ### What is the `uploadedFiles.json`?
 
 It's the legacy input format — a simple JSON array that tells the pipeline which files to process and how to categorize them. Each entry has:
+
 - `filename` — path or URL to the file
 - `type` — what kind of file it is (`Asset`, `Document`, `Image`, `License`, etc.)
 - `category` — the EVES-003 category (`isSimulationData`, `isDocumentation`, `isMedia`, etc.)
