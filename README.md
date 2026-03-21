@@ -348,8 +348,6 @@ Create `my_asset/input/input_manifest.json` using the template above, then run:
     -out my_asset\output
 ```
 
-> **Legacy format:** The pipeline also accepts `uploadedFiles.json` (a simple JSON array). See the [FAQ](#what-is-the-uploadedfilesjson) for details. New projects should use `input_manifest.json`.
-
 ## What Partners Get
 
 When you share the generated asset (the `<CID>.zip`), recipients get a self-contained package they can evaluate without asking you anything:
@@ -459,17 +457,6 @@ $env:SL58_LOG_MODE = "debug"
 ```
 
 Shows full subprocess command lines, stdout/stderr, and tracebacks.
-
-### What is the `uploadedFiles.json`?
-
-It's the legacy input format — a simple JSON array that tells the pipeline which files to process and how to categorize them. Each entry has:
-
-- `filename` — path or URL to the file
-- `type` — what kind of file it is (`Asset`, `Document`, `Image`, `License`, etc.)
-- `category` — the EVES-003 category (`isSimulationData`, `isDocumentation`, `isMedia`, etc.)
-- `did` (optional) — a decentralized identifier for the asset
-
-The modern replacement is `input_manifest.json` (JSON-LD format). Both formats are supported. See `generated/input/input_manifest.json` for a complete example.
 
 ### Known Limitations
 
