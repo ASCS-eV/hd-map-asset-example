@@ -1,7 +1,7 @@
 [submodule "submodules/sl-5-8-asset-tools"]
 	path = submodules/sl-5-8-asset-tools
 	url = https://github.com/openMSL/sl-5-8-asset-tools.git
-	branch = main
+	branch = feature/envited-x-ecosystem
 [submodule "submodules/EVES"]
 	path = submodules/EVES
 	url = https://github.com/ASCS-eV/EVES.git
