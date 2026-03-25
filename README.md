@@ -59,7 +59,7 @@ sudo apt install python3.12 python3.12-venv
 
 </details>
 
-> **Podman** is only needed for `make wizard` (the SD Creation Wizard web UI). The pipeline itself does not require it. Podman is auto-installed by `make setup wizard` if missing.
+> **Podman** is only needed for `make wizard` (the SD Creation Wizard web UI). The pipeline itself does not require it. Podman is auto-installed when you first run `make wizard` if missing.
 
 ## Quick Start
 
@@ -405,6 +405,8 @@ make generate clean     # Remove generated/output/ directory
 
 make validate           # Validate the generated asset against SHACL
 make lint               # Lint (validate + markdown lint)
+make lint-md            # Lint Markdown files only
+make format             # Auto-fix Markdown lint issues
 
 make wizard             # Start SD Creation Wizard (Podman, auto-setup if needed)
 make wizard stop        # Stop the wizard containers
@@ -457,6 +459,18 @@ $env:SL58_LOG_MODE = "debug"
 ```
 
 Shows full subprocess command lines, stdout/stderr, and tracebacks.
+
+### How do I get reproducible output?
+
+```bash
+# Bash / Git Bash / macOS / Linux:
+SL58_DETERMINISTIC=1 make generate
+
+# PowerShell:
+$env:SL58_DETERMINISTIC = "1"; make generate
+```
+
+Same input files produce identical UUIDs, timestamps, and CID — useful for CI and diffing.
 
 ### Known Limitations
 
