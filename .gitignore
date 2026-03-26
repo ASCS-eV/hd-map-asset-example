@@ -1,2 +1,19 @@
 /.venv/
 output.log
+*.zip
+/generated/output/
+!/generated/input/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+NUL

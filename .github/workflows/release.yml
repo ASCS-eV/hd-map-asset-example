@@ -5,48 +5,36 @@ on:
     tags:
       - 'v*.*.*'  # Triggers the workflow on version tags
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository (+ download lfs dependencies)
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
           lfs: true
+          submodules: recursive
+
     - name: Checkout LFS objects
       run: git lfs checkout
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        node-version: '20'
+        python-version: '3.12'
 
-    - name: Install zip
-      run: sudo apt-get install -y zip
-
-    - name: Create zip file
+    - name: Setup, generate, and validate
       run: |
-        cd asset
-        zip -r ../Testfeld_Niedersachsen_ALKS_xodr_sample.zip ./*
- 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+        make setup
+        make generate
+        make validate
 
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release and Upload Asset
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./Testfeld_Niedersachsen_ALKS_xodr_sample.zip
-        asset_name: Testfeld_Niedersachsen_ALKS_xodr_sample.zip
-        asset_content_type: application/zip
+        files: "generated/output/**/*.zip"
+        generate_release_notes: true
